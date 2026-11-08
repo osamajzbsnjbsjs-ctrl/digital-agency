@@ -1,724 +1,873 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
-import { createClient } from "@supabase/supabase-js";
-import { PDFDocument } from "pdf-lib";
-import jsPDF from "jspdf";
-import QRCode from "qrcode";
+import React, { useState, useEffect } from 'react';
+import { createClient } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
+import { 
+  ShoppingBag, 
+  Search, 
+  ShieldCheck, 
+  X, 
+  Euro, 
+  Star,
+  CheckCircle,
+  Globe,
+  LogOut,
+  LogIn,
+  Package,
+  ChevronLeft,
+  ChevronRight,
+  Sparkles,
+  RefreshCw,
+  Languages
+} from 'lucide-react';
 
-const Icon = ({ path, className = "w-6 h-6" }: { path: string; className?: string }) => (
-  <svg
-    className={className}
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="1.8"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    viewBox="0 0 24 24"
-  >
-    <path d={path} />
-  </svg>
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-const getSupabase = () => {
-  const u = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const k = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (u && k && u !== "") return createClient(u, k);
-  return null;
+export interface Product {
+  id: string;
+  name: string;
+  name_en?: string;
+  category: string;
+  price_eur: number;
+  price_syp: number;
+  image: string;
+  badge?: string;
+  badge_en?: string;
+  delivery_time: string;
+  delivery_time_en?: string;
+  rating: number;
+  description?: string;
+  description_en?: string;
+}
+
+const translations = {
+  ar: {
+    topBannerBadge: "فخامة وأمان",
+    topBannerText: "منصة سَنَد Premium: جسرك المباشر والآمن لنقل الخدمات والمستلزمات من أوروبا إلى سوريا",
+    brandSub: "Sanad Luxury Express",
+    searchPlaceholder: "ابحث عن المنتجات، السلال، منظومات الطاقة...",
+    loginBtn: "دخول / حساب جديد",
+    logoutTitle: "تسجيل الخروج",
+    userFallback: "مستخدم سند",
+    heroBadge: "دفع مباشر باليورو وإرسال آمن",
+    heroTitleLine1: "خدمات فاخرة وتوصيل مباشر",
+    heroTitleLine2: "لأهلك في كافة المدن السورية",
+    heroDesc: "تصلك كافة السلال الغذائية المقننة، منظومات الطاقة الجيل الحديث، والخدمات الخاصة مباشرة عبر منصتنا المزودة بقاعدة بيانات حية في Supabase.",
+    heroCta: "تصفح المنتجات",
+    heroGuarantee: "ضمان التسليم باليد والتصوير",
+    calcTitle: "حاسبة الشراء والتوصيل",
+    calcLive: "تحديث حي",
+    calcLabel: "المبلغ الإجمالي باليورو (EUR)",
+    calcResultLabel: "القيمة الموازية بالليرة السورية:",
+    calcRateLabel: "سعر الصرف التقديري:",
+    calcNote: "* يتم جلب المنتجات وإدارة الأسعار وتحديث الطلبات مباشرة عبر Supabase.",
+    sectionSub: "Supabase Live Database",
+    sectionTitle: "المنتجات والخدمات الحقيقية",
+    catAll: "الكل",
+    catFood: "سلال غذائية",
+    catElectronics: "طاقة شمسية",
+    catFuel: "وقود ومحروقات",
+    catHealth: "أدوية ورعاية",
+    fetchErr: "تعذر جلب المنتجات من قاعدة البيانات، يرجى التأكد من إضافة البيانات في Supabase.",
+    noProductsTitle: "لا توجد منتجات حالياً في هذا القسم",
+    noProductsDesc: "أضف صفوفاً جديدة داخل جدول products في حسابك على Supabase وستظهر فوراً هنا.",
+    sendBtn: "إرسال لأهلك الآن",
+    cartTitle: "سلة التسوق",
+    cartEmpty: "السلة فارغة حالياً",
+    cartQty: "الكمية:",
+    cartRemove: "إزالة",
+    cartTotal: "المجموع:",
+    cartCheckout: "إتمام الطلب",
+    orderModalTitle: "بيانات المستلم في سوريا",
+    orderProduct: "المنتج:",
+    recipientFullName: "الاسم الكامل للمستلم",
+    recipientPhone: "رقم الهاتف / الواتساب",
+    recipientCity: "المحافظة",
+    recipientAddress: "المنطقة / العنوان المفصل",
+    orderSubmitBtn: "تأكيد الطلب وحفظه في لوحة التحكم",
+    orderSuccessTitle: "تم تسجيل طلبك بنجاح!",
+    orderSuccessDesc: "تم إرسال الطلب وإضافته للوحة تحكم الإدارة لتجهيزه وتوصيله لأهلك.",
+    authLoginTitle: "تسجيل الدخول",
+    authSignupTitle: "حساب جديد في سند",
+    authLoginSub: "أهلاً بك مجدداً في المنصة",
+    authSignupSub: "أنشئ حسابك لتتبع سلالك وطلبات أهلك",
+    authFullName: "الاسم الكامل",
+    authEmail: "البريد الإلكتروني",
+    authPassword: "كلمة المرور",
+    authHaveAccount: "لديك حساب بالفعل؟",
+    authNoAccount: "ليس لديك حساب؟",
+    authToggleLogin: "تسجيل الدخول",
+    authToggleSignup: "إنشاء حساب الآن",
+    footerDesc: "منصة سند لإيصال الخدمات والمساعدات من أوروبا إلى كافة المحافظات السورية بأمان وجودة عالية.",
+    cities: ["دمشق وريفها", "حلب", "حمص", "اللاذقية", "طرطوس", "حماة"]
+  },
+  en: {
+    topBannerBadge: "Luxury & Security",
+    topBannerText: "SANAD Premium: Your direct and safe bridge for sending products & services from Europe to Syria",
+    brandSub: "Sanad Luxury Express",
+    searchPlaceholder: "Search products, food baskets, solar systems...",
+    loginBtn: "Login / Sign Up",
+    logoutTitle: "Logout",
+    userFallback: "Sanad User",
+    heroBadge: "Direct EUR Payments & Secure Transfers",
+    heroTitleLine1: "Premium Services & Direct Delivery",
+    heroTitleLine2: "To Your Loved Ones in All Syrian Cities",
+    heroDesc: "Send curated food packages, next-gen solar power systems, and specialized services connected directly to a live Supabase backend.",
+    heroCta: "Browse Products",
+    heroGuarantee: "Guaranteed Hand-to-Hand Delivery with Photos",
+    calcTitle: "Currency & Delivery Calculator",
+    calcLive: "Live Rate",
+    calcLabel: "Total Amount in Euro (EUR)",
+    calcResultLabel: "Equivalent in Syrian Pounds:",
+    calcRateLabel: "Estimated Rate:",
+    calcNote: "* Products, prices, and orders are dynamically managed via Supabase.",
+    sectionSub: "Supabase Live Database",
+    sectionTitle: "Available Products & Services",
+    catAll: "All",
+    catFood: "Food Baskets",
+    catElectronics: "Solar Energy",
+    catFuel: "Fuel & Heating",
+    catHealth: "Healthcare & Meds",
+    fetchErr: "Could not load products. Please ensure items are added to your Supabase table.",
+    noProductsTitle: "No products found in this category",
+    noProductsDesc: "Add rows to the 'products' table in your Supabase project to see them live here.",
+    sendBtn: "Send to Family Now",
+    cartTitle: "Shopping Cart",
+    cartEmpty: "Your cart is empty",
+    cartQty: "Qty:",
+    cartRemove: "Remove",
+    cartTotal: "Total:",
+    cartCheckout: "Checkout",
+    orderModalTitle: "Recipient Details in Syria",
+    orderProduct: "Product:",
+    recipientFullName: "Recipient's Full Name",
+    recipientPhone: "Phone / WhatsApp Number",
+    recipientCity: "Governorate",
+    recipientAddress: "District / Detailed Address",
+    orderSubmitBtn: "Confirm Order & Save to Admin Panel",
+    orderSuccessTitle: "Order Submitted Successfully!",
+    orderSuccessDesc: "Your order has been recorded and sent to the admin dashboard for processing.",
+    authLoginTitle: "Log In",
+    authSignupTitle: "Create Sanad Account",
+    authLoginSub: "Welcome back to Sanad Platform",
+    authSignupSub: "Register to track your shipments and orders easily",
+    authFullName: "Full Name",
+    authEmail: "Email Address",
+    authPassword: "Password",
+    authHaveAccount: "Already have an account?",
+    authNoAccount: "Don't have an account?",
+    authToggleLogin: "Log In",
+    authToggleSignup: "Register Now",
+    footerDesc: "Sanad Platform: Facilitating direct aid, food supplies, and equipment from Europe to all Syrian governorates securely.",
+    cities: ["Damascus & Suburbs", "Aleppo", "Homs", "Lattakia", "Tartous", "Hama"]
+  }
 };
 
 export default function Home() {
-  const [lang, setLang] = useState<"ar" | "en">("ar");
+  const [lang, setLang] = useState<'ar' | 'en'>('ar');
+  const t = translations[lang];
 
-  const [user, setUser] = useState<any>(null);
-  const [email, setEmail] = useState<string>("");
-  const [password, setPassword] = useState<string>("");
-  const [authMode, setAuthMode] = useState<"login" | "signup">("login");
-  const [authModalOpen, setAuthModalOpen] = useState<boolean>(false);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [msg, setMsg] = useState<string>("");
+  const [user, setUser] = useState<User | null>(null);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  
+  const [cart, setCart] = useState<{ product: Product; quantity: number }[]>([]);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [calcAmount, setCalcAmount] = useState<number>(100);
+  
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [authError, setAuthError] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
 
-  const [freeUses, setFreeUses] = useState<number>(5);
-  const [isSubscribed, setIsSubscribed] = useState<boolean>(false);
-  const [payModalOpen, setPayModalOpen] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [recipientName, setRecipientName] = useState('');
+  const [recipientPhone, setRecipientPhone] = useState('');
+  const [recipientCity, setRecipientCity] = useState(t.cities[0]);
+  const [recipientAddress, setRecipientAddress] = useState('');
+  const [orderSuccess, setOrderSuccess] = useState(false);
 
-  const [activeTool, setActiveTool] = useState<string | null>(null);
+  const exchangeRate = 14500; 
 
-  // حالات السيرة الذاتية
-  const [cvName, setCvName] = useState<string>("أسامة");
-  const [cvJob, setCvJob] = useState<string>("مهندس برمجيات ومطور ذكاء اصطناعي");
-  const [cvEmail, setCvEmail] = useState<string>("osama@example.com");
-  const [cvPhone, setCvPhone] = useState<string>("+90 5xx xxx xx xx");
-  const [cvSummary, setCvSummary] = useState<string>("مطور شغوف لبناء المنصات وتطبيقات الويب الذكية بإستخدام أحدث التقنيات البرمجية.");
-  const [cvSkills, setCvSkills] = useState<string>("Next.js, React, Tailwind CSS, Supabase, Git, TypeScript");
+  const fetchProductsFromSupabase = async () => {
+    setLoadingProducts(true);
+    setFetchError(null);
+    try {
+      const { data, error } = await supabase
+        .from('products')
+        .select('*')
+        .order('id', { ascending: false });
 
-  const [pdfFiles, setPdfFiles] = useState<FileList | null>(null);
-  const [mergeStatus, setMergeStatus] = useState<string>("");
-  const [isMerging, setIsMerging] = useState<boolean>(false);
-  const [ttsText, setTtsText] = useState<string>("");
-  const [ttsLang, setTtsLang] = useState<string>("ar-SA");
-  const [qrText, setQrText] = useState<string>("https://digital-agency-pi.vercel.app");
-  const [qrDataUrl, setQrDataUrl] = useState<string>("");
-
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [isDrawing, setIsDrawing] = useState<boolean>(false);
-
-  const fetchUserProfile = async (userId: string) => {
-    const sb = getSupabase();
-    if (!sb) return;
-    const { data } = await sb.from("profiles").select("free_uses, is_subscribed").eq("id", userId).single();
-    if (data) {
-      setFreeUses(data.free_uses ?? 5);
-      setIsSubscribed(data.is_subscribed ?? false);
+      if (error) {
+        console.error('Error fetching products:', error);
+        setFetchError(t.fetchErr);
+      } else {
+        setProducts(data || []);
+      }
+    } catch (err: any) {
+      console.error('Fetch exception:', err);
+      setFetchError(t.fetchErr);
+    } finally {
+      setLoadingProducts(false);
     }
   };
 
   useEffect(() => {
-    const sb = getSupabase();
-    if (!sb) {
-      const savedUses = localStorage.getItem("osama_pdf_uses");
-      if (savedUses !== null) setFreeUses(parseInt(savedUses));
-      if (localStorage.getItem("osama_pdf_sub") === "true") setIsSubscribed(true);
-      return;
+    async function initData() {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+
+      const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+        setUser(session?.user ?? null);
+      });
+
+      await fetchProductsFromSupabase();
+
+      return () => {
+        authListener.subscription.unsubscribe();
+      };
     }
-    sb.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchUserProfile(session.user.id);
-    });
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) fetchUserProfile(session.user.id);
-    });
-    return () => subscription.unsubscribe();
+
+    initData();
   }, []);
 
-  useEffect(() => {
-    if (qrText) {
-      QRCode.toDataURL(qrText, {
-        width: 400,
-        margin: 2,
-        color: { dark: "#0f172a", light: "#ffffff" },
-      }).then((url: string) => setQrDataUrl(url));
-    }
-  }, [qrText]);
-
-  const checkAndConsumeUse = async (): Promise<boolean> => {
-    if (isSubscribed) return true;
-    if (freeUses <= 0) {
-      setPayModalOpen(true);
-      return false;
-    }
-    const nextUses = freeUses - 1;
-    setFreeUses(nextUses);
-    localStorage.setItem("osama_pdf_uses", nextUses.toString());
-    const sb = getSupabase();
-    if (sb && user) await sb.from("profiles").update({ free_uses: nextUses }).eq("id", user.id);
-    return true;
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
   };
 
-  const handleSubscribe = async () => {
-    setIsSubscribed(true);
-    localStorage.setItem("osama_pdf_sub", "true");
-    const sb = getSupabase();
-    if (sb && user) await sb.from("profiles").update({ is_subscribed: true }).eq("id", user.id);
-    setPayModalOpen(false);
-  };
+  const filteredProducts = products.filter(product => {
+    const matchesCategory = selectedCategory === 'all' || product.category === selectedCategory;
+    const nameToSearch = lang === 'en' && product.name_en ? product.name_en : product.name;
+    const matchesSearch = (nameToSearch || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCategory && matchesSearch;
+  });
 
-  const handleRealMergePdf = async () => {
-    if (!pdfFiles || pdfFiles.length < 2) return alert(lang === "ar" ? "حدد ملفين PDF على الأقل" : "Select 2+ PDFs");
-    if (!(await checkAndConsumeUse())) return;
-    setIsMerging(true);
-    setMergeStatus(lang === "ar" ? "جاري معالجة ودمج الصفحات حقيقياً..." : "Merging PDF pages...");
-    try {
-      const mergedPdf = await PDFDocument.create();
-      for (let i = 0; i < pdfFiles.length; i++) {
-        const fileBuffer = await pdfFiles[i].arrayBuffer();
-        const pdf = await PDFDocument.load(fileBuffer);
-        const copiedPages = await mergedPdf.copyPages(pdf, pdf.getPageIndices());
-        copiedPages.forEach((p: any) => mergedPdf.addPage(p));
+  const addToCart = (product: Product) => {
+    setCart(prev => {
+      const existing = prev.find(item => item.product.id === product.id);
+      if (existing) {
+        return prev.map(item =>
+          item.product.id === product.id
+            ? { ...item, quantity: item.quantity + 1 }
+            : item
+        );
       }
-      const bytes = await mergedPdf.save();
-      const blob = new Blob([bytes], { type: "application/pdf" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = "osama-merged.pdf";
-      a.click();
-      setMergeStatus(lang === "ar" ? "تم الدمج والتنزيل بنجاح!" : "Merged & Downloaded!");
-    } catch {
-      alert("حدث خطأ أثناء قراءة ملفات الـ PDF");
-    } finally {
-      setIsMerging(false);
-    }
+      return [...prev, { product, quantity: 1 }];
+    });
+    setIsCartOpen(true);
   };
 
-  const handleRealCVExport = async () => {
-    if (!cvName) return alert("أدخل اسمك الكامل أولاً");
-    if (!(await checkAndConsumeUse())) return;
-    const doc = new jsPDF();
-    doc.setFontSize(24);
-    doc.text(cvName, 20, 30);
-    doc.setFontSize(14);
-    doc.text(`Title: ${cvJob || "Software Engineer"}`, 20, 42);
-    doc.setFontSize(11);
-    doc.text(`Email: ${cvEmail} | Phone: ${cvPhone}`, 20, 52);
-    doc.text(`Summary: ${cvSummary}`, 20, 64);
-    doc.text(`Skills: ${cvSkills}`, 20, 80);
-    doc.setFontSize(9);
-    doc.text("Generated by osama pdf - Nama Academy Studio Pro", 20, 110);
-    doc.save(`${cvName.replace(/\s+/g, "_")}_CV.pdf`);
-    setActiveTool(null);
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(item => item.product.id !== id));
   };
 
-  const handleSaveSignature = async () => {
-    if (!canvasRef.current) return;
-    if (!(await checkAndConsumeUse())) return;
-    const a = document.createElement("a");
-    a.href = canvasRef.current.toDataURL("image/png");
-    a.download = "osama-signature.png";
-    a.click();
-    setActiveTool(null);
-  };
+  const cartTotalEUR = cart.reduce((sum, item) => sum + item.product.price_eur * item.quantity, 0);
 
-  const handleDownloadQR = async () => {
-    if (!qrDataUrl) return;
-    if (!(await checkAndConsumeUse())) return;
-    const a = document.createElement("a");
-    a.href = qrDataUrl;
-    a.download = "osama-qr.png";
-    a.click();
-  };
-
-  const handleSpeak = async () => {
-    if (!ttsText) return;
-    if (!(await checkAndConsumeUse())) return;
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(ttsText);
-    utter.lang = ttsLang;
-    window.speechSynthesis.speak(utter);
-  };
-
-  const handleAuth = async (e: React.FormEvent) => {
+  const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const sb = getSupabase();
-    if (!sb) return setMsg("تأكد من إعداد المفاتيح");
-    setLoading(true);
-    if (authMode === "login") {
-      const { data, error } = await sb.auth.signInWithPassword({ email, password });
-      if (error) setMsg(error.message);
-      else {
-        setAuthModalOpen(false);
-        if (data.user) fetchUserProfile(data.user.id);
+    setAuthError('');
+    setAuthLoading(true);
+
+    try {
+      if (isSignUp) {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { data: { full_name: fullName } }
+        });
+        if (error) setAuthError(error.message);
+        else setIsAuthModalOpen(false);
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) setAuthError(error.message);
+        else setIsAuthModalOpen(false);
       }
-    } else {
-      const { data, error } = await sb.auth.signUp({ email, password });
-      if (error) setMsg(error.message);
-      else {
-        setMsg("تم إنشاء الحساب!");
-        if (data.user) fetchUserProfile(data.user.id);
-      }
+    } catch (err: any) {
+      setAuthError('Network Connection Error.');
+    } finally {
+      setAuthLoading(false);
     }
-    setLoading(false);
   };
 
-  const startDrawing = (e: any) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    setIsDrawing(true);
-    const rect = canvas.getBoundingClientRect();
-    ctx.beginPath();
-    ctx.moveTo((e.clientX || e.touches[0].clientX) - rect.left, (e.clientY || e.touches[0].clientY) - rect.top);
-  };
+  const handleOrderSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedProduct) return;
 
-  const draw = (e: any) => {
-    if (!isDrawing || !canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    ctx.lineTo((e.clientX || e.touches[0].clientX) - rect.left, (e.clientY || e.touches[0].clientY) - rect.top);
-    ctx.strokeStyle = "#38bdf8";
-    ctx.lineWidth = 3.5;
-    ctx.stroke();
-  };
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .insert([
+          {
+            product_name: lang === 'en' && selectedProduct.name_en ? selectedProduct.name_en : selectedProduct.name,
+            price_eur: selectedProduct.price_eur,
+            recipient_name: recipientName,
+            recipient_phone: recipientPhone,
+            recipient_city: recipientCity,
+            recipient_address: recipientAddress,
+            payment_status: 'pending',
+          },
+        ]);
 
-  const services = [
-    {
-      id: "cv-builder",
-      title: lang === "ar" ? "استوديو السير الذاتية (مع الورقة المباشرة)" : "Pro CV Paper Studio",
-      desc: lang === "ar" ? "شاهد معلوماتك تتشكل مباشرة فوق ورقة A4 وتصديرها كملف PDF." : "Live paper document CV editor & PDF exporter.",
-      icon: <Icon path="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M14 2v6h6" className="w-8 h-8 text-cyan-400" />,
-      tag: "Live Paper Preview",
-      color: "from-cyan-500/20 via-blue-500/10 to-transparent",
-    },
-    {
-      id: "qr-generator",
-      title: lang === "ar" ? "مولّد الـ QR Code الذكي" : "Cyber QR Generator",
-      desc: lang === "ar" ? "توليد أكواد QR عالية الدقة مع معاينة ثلاثية الأبعاد فورية وتصدير PNG." : "High resolution QR generator & preview.",
-      icon: <Icon path="M3 3h6v6H3zm12 0h6v6h-6zM3 15h6v6H3zm10 0h2v2h-2z" className="w-8 h-8 text-teal-400" />,
-      tag: "Live 3D Preview",
-      color: "from-teal-500/20 via-emerald-500/10 to-transparent",
-    },
-    {
-      id: "pdf-merge",
-      title: lang === "ar" ? "دمج ملفات PDF المحلي" : "Real PDF Merger",
-      desc: lang === "ar" ? "دمج فائق السرعة والأمان للمستندات محلياً داخل متصفحك دون رفع." : "Merge multiple PDFs locally.",
-      icon: <Icon path="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z M12 11v6 M9 14h6" className="w-8 h-8 text-indigo-400" />,
-      tag: "Ultra Privacy",
-      color: "from-indigo-500/20 via-purple-500/10 to-transparent",
-    },
-    {
-      id: "doc-sign",
-      title: lang === "ar" ? "استوديو التوقيع الشفاف" : "Signature Studio",
-      desc: lang === "ar" ? "وقّع معاملاتك رقمياً باللمس أو بالفأرة وصدرها بخلفية شفافة فورية." : "Digital signature canvas export.",
-      icon: <Icon path="M12 20h9 M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" className="w-8 h-8 text-emerald-400" />,
-      tag: "Transparent PNG",
-      color: "from-emerald-500/20 via-teal-500/10 to-transparent",
-    },
-    {
-      id: "tts-reader",
-      title: lang === "ar" ? "القارئ الصوتي الذكي" : "AI Voice Studio",
-      desc: lang === "ar" ? "قراءة النصوص بجميع لغات العالم مع محرك الصوت الاستثنائي المدمج." : "Listen to texts in 30+ voices.",
-      icon: <Icon path="M11 5L6 9H2v6h4l5 4V5z M19.07 4.93a10 10 0 0 1 0 14.14" className="w-8 h-8 text-amber-400" />,
-      tag: "30+ Global Voices",
-      color: "from-amber-500/20 via-orange-500/10 to-transparent",
-    },
-  ];
+      if (error) {
+        console.error('Error saving order:', error);
+        alert('حدث خطأ أثناء حفظ الطلب في قاعدة البيانات.');
+        return;
+      }
+
+      setOrderSuccess(true);
+      setTimeout(() => {
+        setOrderSuccess(false);
+        setSelectedProduct(null);
+        setRecipientName('');
+        setRecipientPhone('');
+        setRecipientAddress('');
+      }, 3500);
+    } catch (err) {
+      console.error('Order submission exception:', err);
+    }
+  };
 
   return (
-    <div dir={lang === "ar" ? "rtl" : "ltr"} className="min-h-screen bg-[#020612] text-slate-100 font-sans relative overflow-x-hidden selection:bg-cyan-500 selection:text-black">
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
-        <div className="absolute top-0 right-1/4 w-[600px] h-[600px] bg-gradient-to-br from-cyan-500/10 via-blue-600/10 to-purple-600/10 rounded-full blur-[180px] animate-pulse" />
-        <div className="absolute bottom-10 left-10 w-[600px] h-[600px] bg-gradient-to-tr from-fuchsia-600/10 to-cyan-500/10 rounded-full blur-[200px] animate-pulse" />
+    <div className="min-h-screen bg-[#0B0F17] text-slate-100 font-sans selection:bg-emerald-500 selection:text-slate-950" dir={lang === 'ar' ? 'rtl' : 'ltr'}>
+      
+      <div className="bg-gradient-to-r from-emerald-900 via-emerald-700 to-teal-900 text-emerald-100 text-xs sm:text-sm py-2.5 px-4 text-center font-medium shadow-lg flex justify-center items-center gap-2 border-b border-emerald-500/20">
+        <span className="bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full flex items-center gap-1">
+          <Sparkles className="w-3 h-3 text-amber-300" /> {t.topBannerBadge}
+        </span>
+        <span>{t.topBannerText}</span>
       </div>
 
-      <header className="sticky top-0 z-50 backdrop-blur-2xl bg-[#020612]/80 border-b border-white/10 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 via-indigo-500 to-fuchsia-500 p-0.5 shadow-xl shadow-cyan-500/20 flex items-center justify-center">
-              <div className="w-full h-full bg-[#020612] rounded-[14px] flex items-center justify-center overflow-hidden">
-                <img src="/logo.png" alt="Logo" className="w-full h-full object-cover" onError={(e: any) => (e.target.style.display = "none")} />
-              </div>
+      <header className="sticky top-0 z-40 bg-[#0B0F17]/90 backdrop-blur-xl border-b border-slate-800/80 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between gap-4">
+          
+          <div className="flex items-center gap-3 cursor-pointer group">
+            <img 
+              src="/logo.png" 
+              alt="Sanad Logo" 
+              className="w-11 h-11 object-contain rounded-2xl shadow-lg bg-emerald-500 p-1 group-hover:scale-105 transition-transform" 
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                if (e.currentTarget.nextElementSibling) {
+                  (e.currentTarget.nextElementSibling as HTMLElement).style.display = 'flex';
+                }
+              }}
+            />
+            <div className="w-11 h-11 bg-gradient-to-tr from-emerald-500 via-teal-400 to-emerald-300 rounded-2xl hidden items-center justify-center text-slate-950 font-black text-2xl shadow-lg shadow-emerald-500/20">
+              س
             </div>
             <div>
-              <span className="font-black text-2xl tracking-wider bg-gradient-to-r from-white via-slate-200 to-cyan-400 bg-clip-text text-transparent">
-                osama pdf
-              </span>
-              <span className="block text-[9px] text-cyan-400 font-extrabold tracking-widest uppercase">Nama Academy Ultra</span>
+              <span className="text-2xl font-black tracking-tight text-white block leading-tight font-serif">سَنَد</span>
+              <span className="text-[10px] font-bold text-emerald-400 tracking-widest uppercase">{t.brandSub}</span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-3 px-4 py-2 rounded-2xl bg-white/5 border border-white/10 text-xs backdrop-blur-md">
-              {isSubscribed ? (
-                <span className="text-emerald-400 font-bold flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-                  عضوية دائمية (Pro Member)
-                </span>
-              ) : (
-                <>
-                  <span className="text-slate-400">المحاولات المجانية:</span>
-                  <span className="text-cyan-400 font-black">{freeUses}/5</span>
-                  <button onClick={() => setPayModalOpen(true)} className="px-3 py-1 bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black rounded-xl text-[10px] hover:scale-105 transition-transform">
-                    ترقية $5
-                  </button>
-                </>
-              )}
-            </div>
+          <div className="hidden md:flex items-center flex-1 max-w-lg relative">
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full bg-slate-900/90 border border-slate-700/80 focus:border-emerald-500 rounded-2xl py-2.5 px-11 text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 transition-all shadow-inner"
+            />
+            <Search className={`w-5 h-5 text-slate-400 absolute ${lang === 'ar' ? 'right-4' : 'left-4'}`} />
+          </div>
 
-            <button onClick={() => setLang(lang === "ar" ? "en" : "ar")} className="px-4 py-2 rounded-2xl text-xs font-semibold bg-white/5 border border-white/10 hover:bg-white/10 transition-all text-cyan-300">
-              {lang === "ar" ? "English" : "العربية"}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}
+              className="flex items-center gap-1.5 px-3 py-2 bg-slate-900 border border-slate-700/80 hover:border-emerald-500 text-emerald-400 rounded-2xl text-xs font-bold transition"
+            >
+              <Languages className="w-4 h-4" />
+              <span>{lang === 'ar' ? 'EN' : 'عربي'}</span>
             </button>
 
             {user ? (
-              <button onClick={() => getSupabase()?.auth.signOut().then(() => setUser(null))} className="px-4 py-2 rounded-2xl text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20">
-                تسجيل الخروج
-              </button>
+              <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 py-1.5 px-3 rounded-2xl">
+                <div className="hidden sm:flex flex-col text-xs">
+                  <span className="font-bold text-slate-200">{user.user_metadata?.full_name || t.userFallback}</span>
+                  <span className="text-[10px] text-slate-400">{user.email}</span>
+                </div>
+                <button
+                  onClick={handleSignOut}
+                  className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-slate-800 rounded-xl transition"
+                  title={t.logoutTitle}
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
             ) : (
-              <button onClick={() => { setAuthMode("login"); setAuthModalOpen(true); }} className="px-5 py-2.5 rounded-2xl text-xs font-bold bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 text-slate-950 shadow-lg shadow-cyan-500/20 hover:scale-105 transition-transform">
-                تسجيل الدخول
+              <button
+                onClick={() => { setIsSignUp(false); setIsAuthModalOpen(true); }}
+                className="flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 px-4 sm:px-5 py-2.5 rounded-2xl font-black text-xs sm:text-sm shadow-lg shadow-emerald-500/20 transition duration-300"
+              >
+                <LogIn className="w-4 h-4" />
+                <span>{t.loginBtn}</span>
               </button>
             )}
+
+            <button 
+              onClick={() => setIsCartOpen(true)}
+              className="relative p-3 bg-slate-900 border border-slate-800 text-emerald-400 rounded-2xl hover:bg-slate-800 transition shadow-lg"
+            >
+              <ShoppingBag className="w-5 h-5" />
+              {cart.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-amber-400 text-slate-950 font-black text-xs rounded-full w-5 h-5 flex items-center justify-center shadow-lg">
+                  {cart.reduce((sum, item) => sum + item.quantity, 0)}
+                </span>
+              )}
+            </button>
           </div>
         </div>
       </header>
 
-      <section className="relative z-10 pt-28 pb-20 max-w-7xl mx-auto px-6 text-center">
-        <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-xs font-semibold mb-8 backdrop-blur-md">
-          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
-          <span>الواجهة الفاخرة الجديدة - Ultra Glass Studio</span>
-        </div>
+      <section className="relative py-24 px-4 sm:px-6 lg:px-8 overflow-hidden">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-12 items-center relative z-10">
+          
+          <div className="lg:col-span-7">
+            <div className="inline-flex items-center gap-2 bg-slate-900/80 border border-emerald-500/30 text-emerald-300 px-4 py-2 rounded-full text-xs font-semibold mb-6 backdrop-blur-md shadow-xl">
+              <Globe className="w-4 h-4 text-emerald-400" /> {t.heroBadge}
+            </div>
+            
+            <h1 className="text-4xl sm:text-6xl font-black leading-tight tracking-tight mb-6 text-white font-serif">
+              {t.heroTitleLine1} <br/>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-teal-300 to-amber-300">
+                {t.heroTitleLine2}
+              </span>
+            </h1>
+            
+            <p className="text-slate-400 text-base sm:text-lg mb-8 leading-relaxed max-w-2xl font-light">
+              {t.heroDesc}
+            </p>
 
-        <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black tracking-tight leading-tight max-w-5xl mx-auto mb-8">
-          أدوات رقمية{" "}
-          <span className="bg-gradient-to-r from-cyan-400 via-fuchsia-500 to-indigo-400 bg-clip-text text-transparent">
-            فائقة الفخامة
-          </span>
-        </h1>
-
-        <p className="text-lg sm:text-2xl text-slate-400 max-w-3xl mx-auto font-light leading-relaxed mb-12">
-          انقر على أي أداة لفتح واجهة العمل الفاخرة مع ورقة المعاينة المباشرة والتصدير الفوري.
-        </p>
-
-        <a href="#services" className="px-10 py-5 rounded-2xl font-black bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 text-slate-950 shadow-2xl shadow-cyan-500/30 hover:scale-105 transition-all inline-block">
-          استكشف الأدوات الفاخرة
-        </a>
-      </section>
-
-      <section id="services" className="relative z-10 py-20 max-w-7xl mx-auto px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {services.map((s) => (
-            <div
-              key={s.id}
-              onClick={() => setActiveTool(s.id)}
-              className="group relative p-8 rounded-3xl bg-slate-900/40 border border-white/10 backdrop-blur-2xl hover:border-cyan-500/60 hover:-translate-y-2 transition-all duration-500 cursor-pointer overflow-hidden shadow-2xl"
-            >
-              <div className={`absolute inset-0 bg-gradient-to-br ${s.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`} />
-
-              <div className="flex items-center justify-between mb-8">
-                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 group-hover:border-cyan-500/40 transition-colors">
-                  {s.icon}
-                </div>
-                <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 border border-cyan-500/20">
-                  {s.tag}
-                </span>
-              </div>
-
-              <h3 className="text-2xl font-bold mb-3 text-white group-hover:text-cyan-300 transition-colors">
-                {s.title}
-              </h3>
-              <p className="text-sm text-slate-400 leading-relaxed mb-8 font-light">
-                {s.desc}
-              </p>
-
-              <div className="flex items-center gap-2 text-xs font-extrabold text-cyan-400 group-hover:translate-x-1 transition-transform">
-                <span>فتح النافذة الفاخرة</span>
-                <span>←</span>
+            <div className="flex flex-wrap items-center gap-4">
+              <a 
+                href="#products" 
+                className="bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black px-8 py-4 rounded-2xl shadow-xl shadow-emerald-500/20 transition-all flex items-center gap-2 text-sm sm:text-base group"
+              >
+                <span>{t.heroCta}</span>
+                {lang === 'ar' ? <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> : <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />}
+              </a>
+              <div className="flex items-center gap-3 text-slate-300 text-xs sm:text-sm px-5 py-3.5 bg-slate-900/60 border border-slate-800 rounded-2xl backdrop-blur-md">
+                <ShieldCheck className="w-5 h-5 text-emerald-400" />
+                <span>{t.heroGuarantee}</span>
               </div>
             </div>
-          ))}
+          </div>
+
+          <div className="lg:col-span-5 bg-gradient-to-b from-slate-900/90 to-slate-950/90 backdrop-blur-2xl p-6 sm:p-8 rounded-3xl border border-slate-800 shadow-2xl relative">
+            <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
+              <h3 className="text-xl font-bold flex items-center gap-2 text-white">
+                <Euro className="w-5 h-5 text-amber-400" /> {t.calcTitle}
+              </h3>
+              <span className="text-xs bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 px-3 py-1 rounded-full font-semibold">{t.calcLive}</span>
+            </div>
+
+            <div className="space-y-5">
+              <div>
+                <label className="text-xs text-slate-400 block mb-2 font-medium">{t.calcLabel}</label>
+                <input 
+                  type="number" 
+                  value={calcAmount}
+                  onChange={(e) => setCalcAmount(Number(e.target.value))}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-4 text-white font-black text-xl focus:outline-none focus:border-emerald-500 transition"
+                />
+              </div>
+
+              <div className="p-4 bg-emerald-950/40 rounded-2xl border border-emerald-500/20 space-y-2">
+                <div className="flex justify-between items-center text-xs text-slate-400">
+                  <span>{t.calcResultLabel}</span>
+                  <span>{t.calcRateLabel} {exchangeRate.toLocaleString()} SYP</span>
+                </div>
+                <div className="text-3xl font-black text-amber-400 font-mono">
+                  {(calcAmount * exchangeRate).toLocaleString()} <span className="text-sm font-sans">SYP</span>
+                </div>
+              </div>
+
+              <p className="text-[11px] text-slate-500 leading-normal">
+                {t.calcNote}
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
 
-      {activeTool && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-2xl p-4 sm:p-6 transition-all duration-500 animate-in fade-in overflow-y-auto">
-          <div className={`bg-slate-950/90 border border-cyan-500/30 rounded-3xl p-6 sm:p-10 ${activeTool === "cv-builder" ? "max-w-5xl" : "max-w-2xl"} w-full shadow-[0_0_80px_rgba(56,189,248,0.2)] relative overflow-hidden my-auto`}>
-            <div className="absolute -top-20 -right-20 w-60 h-60 bg-cyan-500/20 rounded-full blur-[100px] pointer-events-none" />
-            <div className="absolute -bottom-20 -left-20 w-60 h-60 bg-purple-500/20 rounded-full blur-[100px] pointer-events-none" />
+      <section id="products" className="py-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12 border-b border-slate-800/80 pb-8">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span className="text-xs font-bold text-emerald-400 uppercase tracking-widest">{t.sectionSub}</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-white font-serif">{t.sectionTitle}</h2>
+          </div>
 
+          <div className="flex flex-wrap gap-2 items-center">
             <button
-              onClick={() => setActiveTool(null)}
-              className="absolute top-6 left-6 text-slate-400 hover:text-white bg-white/5 hover:bg-white/10 w-10 h-10 rounded-2xl flex items-center justify-center border border-white/10 transition-colors z-20"
+              onClick={fetchProductsFromSupabase}
+              className="p-2.5 bg-slate-900 border border-slate-800 text-slate-300 hover:text-white rounded-xl transition"
+              title="Refresh from Supabase"
             >
-              ✕
+              <RefreshCw className={`w-4 h-4 ${loadingProducts ? 'animate-spin' : ''}`} />
             </button>
 
-            {activeTool === "cv-builder" && (
-              <div className="space-y-6">
-                <div>
-                  <div className="inline-block px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 text-[10px] font-bold mb-2">
-                    CV LIVE PAPER STUDIO
+            {[
+              { id: 'all', label: t.catAll },
+              { id: 'food', label: t.catFood },
+              { id: 'electronics', label: t.catElectronics },
+              { id: 'fuel', label: t.catFuel },
+              { id: 'health', label: t.catHealth }
+            ].map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-emerald-500 text-slate-950 shadow-lg shadow-emerald-500/20'
+                    : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {fetchError && (
+          <div className="bg-amber-500/10 border border-amber-500/30 text-amber-300 p-6 rounded-3xl text-center mb-10 max-w-2xl mx-auto text-xs">
+            {fetchError}
+          </div>
+        )}
+
+        {loadingProducts ? (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-slate-900/60 rounded-3xl h-96 animate-pulse border border-slate-800"></div>
+            ))}
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="text-center py-20 bg-slate-900/40 rounded-3xl border border-dashed border-slate-800 max-w-2xl mx-auto">
+            <Package className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+            <h3 className="text-lg font-bold text-slate-300 mb-1">{t.noProductsTitle}</h3>
+            <p className="text-slate-500 text-xs max-w-md mx-auto mb-6">{t.noProductsDesc}</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            {filteredProducts.map(product => {
+              const productName = lang === 'en' && product.name_en ? product.name_en : product.name;
+              const productDesc = lang === 'en' && product.description_en ? product.description_en : product.description;
+              const productBadge = lang === 'en' && product.badge_en ? product.badge_en : product.badge;
+              const productDelivery = lang === 'en' && product.delivery_time_en ? product.delivery_time_en : (product.delivery_time || 'Fast Delivery');
+
+              return (
+                <div 
+                  key={product.id} 
+                  className="bg-slate-900/80 rounded-3xl border border-slate-800/80 shadow-xl hover:border-emerald-500/40 transition-all duration-300 flex flex-col justify-between overflow-hidden group hover:-translate-y-1"
+                >
+                  <div>
+                    <div className="relative h-56 overflow-hidden bg-slate-950">
+                      <img 
+                        src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'} 
+                        alt={productName} 
+                        className="w-full h-full object-cover group-hover:scale-105 transition duration-500 opacity-90 group-hover:opacity-100"
+                      />
+                      {productBadge && (
+                        <span className="absolute top-4 right-4 bg-amber-400 text-slate-950 font-black text-[11px] px-3 py-1 rounded-xl shadow-lg">
+                          {productBadge}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="p-6">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-[11px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2.5 py-1 rounded-lg">
+                          {productDelivery}
+                        </span>
+                        <div className="flex items-center gap-1 text-amber-400 text-xs font-black">
+                          <Star className="w-4 h-4 fill-amber-400" /> {product.rating || 5.0}
+                        </div>
+                      </div>
+
+                      <h3 className="font-bold text-xl text-white mb-2 group-hover:text-emerald-400 transition">{productName}</h3>
+                      {productDesc && (
+                        <p className="text-slate-400 text-xs line-clamp-2 mb-4 leading-relaxed font-light">{productDesc}</p>
+                      )}
+
+                      <div className="flex items-baseline gap-2 pt-3 border-t border-slate-800">
+                        <span className="text-3xl font-black text-white font-mono">€{product.price_eur}</span>
+                        <span className="text-xs text-slate-500">
+                          (~{(product.price_syp || product.price_eur * exchangeRate).toLocaleString()} SYP)
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-3xl font-black text-white">صانع السيرة الذاتية ورؤيتها المباشرة</h3>
-                  <p className="text-xs text-slate-400 mt-1">اكتب بياناتك في النموذج وشاهد تحين وتنسيق الورقة الرسمية فورياً</p>
-                </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-                  <div className="lg:col-span-5 space-y-3">
-                    <label className="block text-xs font-bold text-slate-400">الاسم الكامل</label>
-                    <input
-                      type="text"
-                      value={cvName}
-                      onChange={(e) => setCvName(e.target.value)}
-                      placeholder="الاسم الكامل"
-                      className="w-full p-3.5 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 transition-colors"
-                    />
-
-                    <label className="block text-xs font-bold text-slate-400">المسمى الوظيفي</label>
-                    <input
-                      type="text"
-                      value={cvJob}
-                      onChange={(e) => setCvJob(e.target.value)}
-                      placeholder="المسمى الوظيفي"
-                      className="w-full p-3.5 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 transition-colors"
-                    />
-
-                    <label className="block text-xs font-bold text-slate-400">البريد الإلكتروني</label>
-                    <input
-                      type="text"
-                      value={cvEmail}
-                      onChange={(e) => setCvEmail(e.target.value)}
-                      placeholder="البريد الإلكتروني"
-                      className="w-full p-3.5 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 transition-colors"
-                    />
-
-                    <label className="block text-xs font-bold text-slate-400">رقم الهاتف</label>
-                    <input
-                      type="text"
-                      value={cvPhone}
-                      onChange={(e) => setCvPhone(e.target.value)}
-                      placeholder="رقم الهاتف"
-                      className="w-full p-3.5 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 transition-colors"
-                    />
-
-                    <label className="block text-xs font-bold text-slate-400">الملخص المهني</label>
-                    <textarea
-                      rows={3}
-                      value={cvSummary}
-                      onChange={(e) => setCvSummary(e.target.value)}
-                      placeholder="ملخص عن خبرتك المهنية"
-                      className="w-full p-3.5 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none resize-none focus:border-cyan-500 transition-colors"
-                    />
-
-                    <label className="block text-xs font-bold text-slate-400">المهارات التقنية</label>
-                    <input
-                      type="text"
-                      value={cvSkills}
-                      onChange={(e) => setCvSkills(e.target.value)}
-                      placeholder="المهارات والتقنيات"
-                      className="w-full p-3.5 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-cyan-500 transition-colors"
-                    />
-
-                    <button
-                      onClick={handleRealCVExport}
-                      className="w-full py-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-600 text-slate-950 font-black rounded-2xl shadow-xl shadow-cyan-500/20 hover:scale-[1.02] transition-transform mt-2"
+                  <div className="p-6 pt-0 flex gap-2">
+                    <button 
+                      onClick={() => setSelectedProduct(product)}
+                      className="flex-1 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-lg shadow-emerald-500/20 text-xs sm:text-sm"
                     >
-                      تصدير الورقة إلى PDF حقيقي
+                      {t.sendBtn}
+                    </button>
+                    <button 
+                      onClick={() => addToCart(product)}
+                      className="p-3.5 bg-slate-950 border border-slate-800 text-slate-300 hover:text-white rounded-2xl transition"
+                      title="Add to Cart"
+                    >
+                      <ShoppingBag className="w-5 h-5" />
                     </button>
                   </div>
-
-                  <div className="lg:col-span-7 bg-white text-slate-900 rounded-2xl p-8 shadow-2xl min-h-[520px] relative font-sans border-t-8 border-cyan-500 flex flex-col justify-between">
-                    <div className="space-y-6">
-                      <div className="border-b-2 border-slate-100 pb-5 flex justify-between items-start">
-                        <div>
-                          <h2 className="text-3xl font-black text-slate-900 tracking-tight">{cvName || "اسمك الكامل"}</h2>
-                          <p className="text-sm font-bold text-cyan-600 uppercase tracking-wide mt-1">{cvJob || "المسمى الوظيفي"}</p>
-                        </div>
-                        <div className="text-left text-[11px] text-slate-500 space-y-0.5">
-                          <p>{cvEmail || "email@example.com"}</p>
-                          <p>{cvPhone || "+90 xxx xxx xx"}</p>
-                        </div>
-                      </div>
-
-                      <div>
-                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-2 border-b border-slate-100 pb-1">
-                          الملخص المهني / About Me
-                        </h3>
-                        <p className="text-xs text-slate-700 leading-relaxed font-medium">
-                          {cvSummary || "أكتب هنا نبذة عن مهاراتك وخبراتك المهنية ليتم عرضها بأسلوب متناسق وفاخر..."}
-                        </p>
-                      </div>
-
-                      <div>
-                        <h3 className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 border-b border-slate-100 pb-1">
-                          المهارات والتخصصات / Skills
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
-                          {(cvSkills || "Next.js, Supabase, Tailwind CSS").split(",").map((skill: string, i: number) => (
-                            <span key={i} className="px-3 py-1 rounded-lg bg-slate-100 text-slate-800 text-[11px] font-bold">
-                              {skill.trim()}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="pt-8 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>DOCUMENT VERIFIED BY OSAMA PDF</span>
-                      <span>NAMA ACADEMY STUDIO PRO</span>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            )}
-
-            {activeTool === "qr-generator" && (
-              <div className="space-y-6 text-center">
-                <div>
-                  <div className="inline-block px-3 py-1 rounded-full bg-teal-500/10 text-teal-400 border border-teal-500/20 text-[10px] font-bold mb-2">
-                    CYBER QR GENERATOR
-                  </div>
-                  <h3 className="text-3xl font-black text-white">مولد الـ QR Code الذكي</h3>
-                  <p className="text-xs text-slate-400 mt-1">اكتب أي رابط أو نص ليتم توليد كود الـ QR ثلاثي الأبعاد فوراً</p>
-                </div>
-
-                <input
-                  type="text"
-                  value={qrText}
-                  onChange={(e) => setQrText(e.target.value)}
-                  placeholder="أدخل الرابط أو النص هنا"
-                  className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white text-sm text-center outline-none focus:border-teal-500 transition-colors"
-                />
-
-                {qrDataUrl && (
-                  <div className="relative group inline-block my-2">
-                    <div className="absolute -inset-2 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-3xl blur-xl opacity-50 group-hover:opacity-80 transition duration-500" />
-                    <div className="relative p-5 bg-white rounded-2xl border border-slate-700 shadow-2xl">
-                      <img src={qrDataUrl} alt="QR Code" className="w-52 h-52 mx-auto" />
-                    </div>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleDownloadQR}
-                  className="w-full py-4 bg-gradient-to-r from-teal-400 via-emerald-500 to-cyan-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-teal-500/20 hover:scale-[1.02] transition-transform"
-                >
-                  تنزيل كود الـ QR بوضوح عالي (PNG)
-                </button>
-              </div>
-            )}
-
-            {activeTool === "pdf-merge" && (
-              <div className="space-y-6 text-center">
-                <div>
-                  <div className="inline-block px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-[10px] font-bold mb-2">
-                    REAL PDF MERGER
-                  </div>
-                  <h3 className="text-3xl font-black text-white">استوديو دمج ملفات PDF</h3>
-                  <p className="text-xs text-slate-400 mt-1">حدد ملفين أو أكثر لدمجهما في مستند واحد فائق السرعة محلياً</p>
-                </div>
-
-                <div className="p-8 border-2 border-dashed border-white/15 rounded-3xl bg-white/5 text-center cursor-pointer hover:border-indigo-500/50 transition-colors">
-                  <input
-                    type="file"
-                    multiple
-                    accept=".pdf"
-                    onChange={(e) => setPdfFiles(e.target.files)}
-                    className="block w-full text-xs text-slate-400 file:py-3 file:px-6 file:rounded-xl file:border-0 file:bg-indigo-500/20 file:text-indigo-300 cursor-pointer"
-                  />
-                  <p className="text-xs text-slate-400 mt-3">تم اختيار <span className="text-cyan-400 font-bold">{pdfFiles?.length || 0}</span> ملفات للدمج الفعلي</p>
-                </div>
-
-                {mergeStatus && <p className="text-xs text-emerald-400 font-bold animate-pulse">{mergeStatus}</p>}
-
-                <button
-                  onClick={handleRealMergePdf}
-                  disabled={isMerging}
-                  className="w-full py-4 bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-indigo-500/20 hover:scale-[1.02] transition-transform"
-                >
-                  {isMerging ? "جاري المعالجة والدمج الحقيقي..." : "بدء الدمج الفعلي وتنزيل المستند"}
-                </button>
-              </div>
-            )}
-
-            {activeTool === "doc-sign" && (
-              <div className="space-y-6 text-center">
-                <div>
-                  <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-bold mb-2">
-                    DIGITAL SIGNATURE CANVAS
-                  </div>
-                  <h3 className="text-3xl font-black text-white">لوحة التوقيع الشفاف</h3>
-                  <p className="text-xs text-slate-400 mt-1">وقّع بخط يدك المباشر وصدر التوقيع كصورة PNG شفافة</p>
-                </div>
-
-                <div className="border border-white/15 rounded-3xl bg-black/60 overflow-hidden inline-block p-1 shadow-2xl">
-                  <canvas
-                    ref={canvasRef}
-                    width={450}
-                    height={220}
-                    onMouseDown={startDrawing}
-                    onMouseMove={draw}
-                    onMouseUp={() => setIsDrawing(false)}
-                    onTouchStart={startDrawing}
-                    onTouchMove={draw}
-                    onTouchEnd={() => setIsDrawing(false)}
-                    className="cursor-crosshair touch-none"
-                  />
-                </div>
-
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => {
-                      const ctx = canvasRef.current?.getContext("2d");
-                      ctx?.clearRect(0, 0, 450, 220);
-                    }}
-                    className="flex-1 py-3.5 bg-white/5 border border-white/10 text-slate-300 font-bold rounded-2xl text-xs hover:bg-white/10"
-                  >
-                    مسح اللوحة
-                  </button>
-                  <button
-                    onClick={handleSaveSignature}
-                    className="flex-1 py-3.5 bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 font-black rounded-2xl text-xs shadow-xl shadow-emerald-500/20 hover:scale-105 transition-transform"
-                  >
-                    تنزيل التوقيع (PNG شفاف)
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTool === "tts-reader" && (
-              <div className="space-y-6">
-                <div>
-                  <div className="inline-block px-3 py-1 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] font-bold mb-2">
-                    AI GLOBAL VOICE STUDIO
-                  </div>
-                  <h3 className="text-3xl font-black text-white">القارئ الصوتي الذكي</h3>
-                  <p className="text-xs text-slate-400 mt-1">اختر اللغة وأدخل النص لقراءته بوضوح صوتي عالي جداً</p>
-                </div>
-
-                <select
-                  value={ttsLang}
-                  onChange={(e) => setTtsLang(e.target.value)}
-                  className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none focus:border-amber-500 transition-colors"
-                >
-                  <option value="ar-SA" className="bg-slate-950">العربية (Arabic)</option>
-                  <option value="en-US" className="bg-slate-950">English (US)</option>
-                  <option value="tr-TR" className="bg-slate-950">Türkçe (Turkish)</option>
-                </select>
-
-                <textarea
-                  rows={4}
-                  value={ttsText}
-                  onChange={(e) => setTtsText(e.target.value)}
-                  placeholder="اكتب النص الذي تريد قراءته صوتياً..."
-                  className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none resize-none focus:border-amber-500 transition-colors"
-                />
-
-                <button
-                  onClick={handleSpeak}
-                  className="w-full py-4 bg-gradient-to-r from-amber-400 via-orange-500 to-rose-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-amber-500/20 hover:scale-[1.02] transition-transform"
-                >
-                  تشغيل الصوت المباشر
-                </button>
-              </div>
-            )}
+              );
+            })}
           </div>
-        </div>
-      )}
+        )}
+      </section>
 
-      {payModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-2xl p-4">
-          <div className="bg-slate-950 border border-cyan-500/40 rounded-3xl p-8 max-w-md w-full text-center shadow-[0_0_50px_rgba(56,189,248,0.3)]">
-            <h3 className="text-3xl font-black text-cyan-400 mb-3">فتح الوصول الكامل (Pro)</h3>
-            <p className="text-sm text-slate-300 mb-6 font-light">وصول مفتوح وغير محدود لكافة الأدوات الحقيقية مقابل **5$ فقط** مدى الحياة!</p>
-            <button onClick={handleSubscribe} className="w-full py-4 bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 font-black rounded-2xl shadow-2xl hover:scale-105 transition-transform mb-3">
-              اشترك الآن ($5)
+      {selectedProduct && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-lg shadow-2xl relative overflow-hidden text-slate-100">
+            <button 
+              onClick={() => setSelectedProduct(null)}
+              className={`absolute top-5 ${lang === 'ar' ? 'left-5' : 'right-5'} p-2 text-slate-400 hover:text-white rounded-full bg-slate-800 transition`}
+            >
+              <X className="w-5 h-5" />
             </button>
-            <button onClick={() => setPayModalOpen(false)} className="text-xs text-slate-400 hover:text-white">إلغاء</button>
+
+            {orderSuccess ? (
+              <div className="text-center py-10">
+                <div className="w-20 h-20 bg-emerald-500/20 text-emerald-400 rounded-full flex items-center justify-center mx-auto mb-5 border border-emerald-500/30">
+                  <CheckCircle className="w-10 h-10 animate-bounce" />
+                </div>
+                <h3 className="text-2xl font-black text-white mb-2">{t.orderSuccessTitle}</h3>
+                <p className="text-slate-400 text-sm">{t.orderSuccessDesc}</p>
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-2xl font-black text-white mb-1">{t.orderModalTitle}</h3>
+                <p className="text-xs text-slate-400 mb-6">
+                  {t.orderProduct} <strong className="text-emerald-400">{lang === 'en' && selectedProduct.name_en ? selectedProduct.name_en : selectedProduct.name}</strong> (€{selectedProduct.price_eur})
+                </p>
+
+                <form onSubmit={handleOrderSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{t.recipientFullName}</label>
+                    <input
+                      type="text"
+                      required
+                      value={recipientName}
+                      onChange={(e) => setRecipientName(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-sm focus:border-emerald-500 outline-none text-white"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-300 mb-1">{t.recipientPhone}</label>
+                    <input
+                      type="tel"
+                      required
+                      value={recipientPhone}
+                      onChange={(e) => setRecipientPhone(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-sm focus:border-emerald-500 outline-none text-white"
+                      placeholder="+963 9xx xxx xxx"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{t.recipientCity}</label>
+                      <select
+                        value={recipientCity}
+                        onChange={(e) => setRecipientCity(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-sm focus:border-emerald-500 outline-none text-white"
+                      >
+                        {t.cities.map((city, idx) => (
+                          <option key={idx} value={city}>{city}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-300 mb-1">{t.recipientAddress}</label>
+                      <input
+                        type="text"
+                        required
+                        value={recipientAddress}
+                        onChange={(e) => setRecipientAddress(e.target.value)}
+                        className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3.5 text-sm focus:border-emerald-500 outline-none text-white"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="p-4 bg-slate-950 rounded-2xl border border-slate-800 flex justify-between items-center text-sm font-bold mt-4">
+                    <span>{t.cartTotal}</span>
+                    <span className="text-2xl font-black text-amber-400 font-mono">€{selectedProduct.price_eur}</span>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-4 rounded-2xl shadow-lg shadow-emerald-500/20 transition text-sm"
+                  >
+                    {t.orderSubmitBtn}
+                  </button>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       )}
 
-      {authModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/85 backdrop-blur-2xl p-4">
-          <div className="bg-slate-950 border border-white/10 rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
-            <h3 className="text-2xl font-black text-white mb-6 text-center">{authMode === "login" ? "تسجيل الدخول" : "حساب جديد"}</h3>
-            {msg && <div className="mb-4 p-3 rounded-xl bg-cyan-500/10 text-cyan-400 text-xs text-center">{msg}</div>}
-            <form onSubmit={handleAuth} className="space-y-4">
-              <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="البريد الإلكتروني" className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none" />
-              <input type="password" required value={password} onChange={(e) => setPassword(e.target.value)} placeholder="كلمة المرور" className="w-full p-4 bg-white/5 border border-white/10 rounded-2xl text-white text-sm outline-none" />
-              <button type="submit" disabled={loading} className="w-full py-4 bg-gradient-to-r from-cyan-400 to-blue-600 text-slate-950 font-black rounded-2xl shadow-xl">
-                {loading ? "جاري..." : authMode === "login" ? "دخول" : "إنشاء الحساب"}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 w-full max-w-md shadow-2xl relative text-slate-100">
+            <button 
+              onClick={() => setIsAuthModalOpen(false)}
+              className={`absolute top-5 ${lang === 'ar' ? 'left-5' : 'right-5'} p-2 text-slate-400 hover:text-white rounded-full bg-slate-800 transition`}
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <h3 className="text-2xl font-black text-white mb-1">
+              {isSignUp ? t.authSignupTitle : t.authLoginTitle}
+            </h3>
+            <p className="text-xs text-slate-400 mb-6">
+              {isSignUp ? t.authSignupSub : t.authLoginSub}
+            </p>
+
+            {authError && (
+              <div className="bg-red-500/10 border border-red-500/20 text-red-400 p-3.5 rounded-2xl text-xs mb-4 font-medium">
+                {authError}
+              </div>
+            )}
+
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {isSignUp && (
+                <div>
+                  <label className="block text-xs font-bold text-slate-300 mb-1">{t.authFullName}</label>
+                  <input
+                    type="text"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm focus:border-emerald-500 outline-none text-white"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">{t.authEmail}</label>
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm focus:border-emerald-500 outline-none text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-300 mb-1">{t.authPassword}</label>
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-2xl p-3 text-sm focus:border-emerald-500 outline-none text-white"
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={authLoading}
+                className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black py-3.5 rounded-2xl transition shadow-lg shadow-emerald-500/20 text-sm"
+              >
+                {authLoading ? '...' : isSignUp ? t.authToggleSignup : t.authToggleLogin}
               </button>
             </form>
-            <button onClick={() => setAuthModalOpen(false)} className="absolute top-4 left-4 text-slate-400">✕</button>
+
+            <div className="mt-6 text-center text-xs text-slate-400">
+              {isSignUp ? t.authHaveAccount : t.authNoAccount}{' '}
+              <button
+                onClick={() => { setIsSignUp(!isSignUp); setAuthError(''); }}
+                className="text-emerald-400 font-bold underline mx-1"
+              >
+                {isSignUp ? t.authToggleLogin : t.authToggleSignup}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      <footer className="border-t border-white/10 py-10 bg-[#01040d] text-center text-xs text-slate-500">
-        <p>osama pdf — جميع الحقوق محفوظة © {new Date().getFullYear()}</p>
+      {isCartOpen && (
+        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex justify-end">
+          <div className="bg-slate-900 border-r border-slate-800 w-full max-w-md h-full shadow-2xl flex flex-col p-6 text-slate-100">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <h3 className="font-bold text-lg text-white">{t.cartTitle}</h3>
+              <button onClick={() => setIsCartOpen(false)} className="text-slate-400 hover:text-white">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto py-4 space-y-4">
+              {cart.length === 0 ? (
+                <p className="text-center text-slate-500 py-16 text-sm">{t.cartEmpty}</p>
+              ) : (
+                cart.map(item => (
+                  <div key={item.product.id} className="flex items-center justify-between border-b border-slate-800/60 pb-3">
+                    <div>
+                      <h4 className="font-bold text-sm text-slate-200">
+                        {lang === 'en' && item.product.name_en ? item.product.name_en : item.product.name}
+                      </h4>
+                      <p className="text-xs text-slate-500">{t.cartQty} {item.quantity}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="font-black text-amber-400 font-mono">€{item.product.price_eur * item.quantity}</span>
+                      <button onClick={() => removeFromCart(item.product.id)} className="text-slate-500 hover:text-red-400 text-xs">{t.cartRemove}</button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {cart.length > 0 && (
+              <div className="border-t border-slate-800 pt-4 space-y-4">
+                <div className="flex justify-between items-center font-bold text-lg">
+                  <span>{t.cartTotal}</span>
+                  <span className="text-amber-400 font-black font-mono">€{cartTotalEUR}</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    setIsCartOpen(false);
+                    if (cart.length > 0) setSelectedProduct(cart[0].product);
+                  }}
+                  className="w-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 py-3.5 rounded-2xl font-black transition"
+                >
+                  {t.cartCheckout}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      <footer className="bg-slate-950 border-t border-slate-900 py-12 text-slate-500 text-center">
+        <div className="max-w-7xl mx-auto px-4 space-y-4">
+          <div className="flex justify-center items-center gap-2">
+            <img src="/logo.png" alt="Sanad" className="w-7 h-7 object-contain" onError={(e) => e.currentTarget.style.display = 'none'} />
+            <span className="text-white font-bold text-lg font-serif">سَنَد</span>
+          </div>
+          <p className="text-xs max-w-md mx-auto">{t.footerDesc}</p>
+        </div>
       </footer>
+
     </div>
   );
 }

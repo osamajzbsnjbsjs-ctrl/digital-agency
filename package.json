@@ -6,26 +6,36 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "next lint"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.117.2",
-    "jspdf": "^4.2.1",
-    "next": "16.3.8",
+    "@imgly/background-removal": "^1.5.8",
+    "@stripe/stripe-js": "^10.2.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "@tailwindcss/postcss": "^4.3.3",
+    "jspdf": "^2.5.2",
+    "lucide-react": "^1.61.0",
+    "next": "^16.4.3",
     "pdf-lib": "^1.17.1",
     "qrcode": "^1.5.4",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "stripe": "^23.1.0"
   },
   "devDependencies": {
-    "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
-    "@types/qrcode": "^1.5.6",
+    "@types/qrcode": "^1.5.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
-    "tailwindcss": "^4",
+    "postcss": "^8.5.31",
+    "tailwindcss": "^4.3.3",
     "typescript": "^5"
+  },
+  "allowScripts": {
+    "core-js@3.51.0": true,
+    "protobufjs@7.6.6": true,
+    "unrs-resolver@1.12.2": true
   }
 }
