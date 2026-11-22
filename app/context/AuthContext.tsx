@@ -1,8 +1,14 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import type { AuthChangeEvent, Session, User } from '@supabase/supabase-js';
-import { supabase } from '@/lib/supabaseClient';
+import { createClient, type AuthChangeEvent, type Session, type User } from '@supabase/supabase-js';
+
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'public-anon-key';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface AuthContextType {
   user: User | null;
