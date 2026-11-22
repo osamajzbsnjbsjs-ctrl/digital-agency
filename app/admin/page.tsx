@@ -2,22 +2,21 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  RefreshCw, 
-  Phone, 
-  MapPin, 
-  User, 
-  Euro,
+import {
+  RefreshCw,
+  Phone,
+  MapPin,
+  User,
   ArrowRight
 } from 'lucide-react';
 import Link from 'next/link';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+export const dynamic = 'force-dynamic';
+
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'public-anon-key';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface Order {
@@ -36,7 +35,6 @@ export default function AdminDashboard() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // جلب الطلبات من Supabase
   const fetchOrders = async () => {
     setLoading(true);
     const { data, error } = await supabase
@@ -56,7 +54,6 @@ export default function AdminDashboard() {
     fetchOrders();
   }, []);
 
-  // تحديث حالة الطلب (مثلاً: مدفوع، تم التسليم)
   const updateOrderStatus = async (id: number, newStatus: string) => {
     const { error } = await supabase
       .from('orders')
@@ -71,8 +68,7 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-[#0B0F17] text-slate-100 font-sans p-6 sm:p-10" dir="rtl">
       <div className="max-w-7xl mx-auto space-y-8">
-        
-        {/* الهيدر العلوي للوحة التحكم */}
+
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
           <div>
             <div className="flex items-center gap-2 mb-1">
@@ -101,7 +97,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* كروت الإحصائيات السريعة */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
           <div className="bg-slate-900/80 border border-slate-800 p-6 rounded-3xl">
             <span className="text-xs text-slate-400 block mb-1 font-medium">إجمالي الطلبات</span>
@@ -121,7 +116,6 @@ export default function AdminDashboard() {
           </div>
         </div>
 
-        {/* جدول الطلبات */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
           {loading ? (
             <div className="p-12 text-center text-slate-500 text-sm">جاري تحميل الطلبات...</div>
@@ -155,9 +149,9 @@ export default function AdminDashboard() {
                         </div>
                       </td>
                       <td className="p-4 font-mono dir-ltr text-right">
-                        <a 
-                          href={`https://wa.me/${order.recipient_phone?.replace(/[^0-9]/g, '')}`} 
-                          target="_blank" 
+                        <a
+                          href={`https://wa.me/${order.recipient_phone?.replace(/[^0-9]/g, '')}`}
+                          target="_blank"
                           rel="noreferrer"
                           className="flex items-center gap-1.5 text-emerald-400 hover:underline"
                         >
@@ -181,7 +175,7 @@ export default function AdminDashboard() {
                         }`}>
                           {order.payment_status === 'pending' ? 'قيد الانتظار' :
                            order.payment_status === 'paid' ? 'تم الدفع' :
-                           order.payment_status === 'delivered' ? 'تم التوصيل' : order.payment_status}
+                           order.payment_status === 'delivered' ? 'تم التوصيل وتسليم الهدية' : order.payment_status}
                         </span>
                       </td>
                       <td className="p-4">
