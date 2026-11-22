@@ -94,18 +94,18 @@ function detectAgencies(description: string, category?: string): string[] {
 function getAgencyConfig(key: string) {
   const map: Record<string, { name: string; phone: string; chatId: string }> = {
     ambulance: {
-      name: '112 Acil Sağlık (Ambulans)',
-      phone: '112',
+      name: '5759255200 Acil Sağlık (Ambulans)',
+      phone: '5759255200',
       chatId: process.env.AMBULANCE_CHAT_ID || '',
     },
     police: {
-      name: '155 Polis / Emniyet',
-      phone: '155',
+      name: '5759255200 Polis / Emniyet',
+      phone: '5759255200',
       chatId: process.env.POLICE_CHAT_ID || '',
     },
     fire: {
-      name: '110 İtfaiye',
-      phone: '110',
+      name: '5759255200 İtfaiye',
+      phone: '5759255200',
       chatId: process.env.FIRE_CHAT_ID || '',
     },
   };
