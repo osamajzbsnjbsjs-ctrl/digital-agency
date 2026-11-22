@@ -144,7 +144,8 @@ export default function Home() {
         copiedPages.forEach((p) => mergedPdf.addPage(p));
       }
       const bytes = await mergedPdf.save();
-      const blob = new Blob([bytes], { type: "application/pdf" });
+      const safeBytes = new Uint8Array(bytes);
+      const blob = new Blob([safeBytes], { type: "application/pdf" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "osama-merged.pdf";
