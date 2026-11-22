@@ -1,5 +1,7 @@
 'use server';
 
+import { createClient } from '@supabase/supabase-js';
+
 const TELEGRAM_BOT_TOKEN =
   process.env.TELEGRAM_BOT_TOKEN?.trim() ||
   '9299279231:AAF8VjauFxAIyIe7-h2G0lKGCUb4CWoYB_Q';
@@ -11,8 +13,16 @@ const TELEGRAM_CHAT_ID =
   process.env.FIRE_CHAT_ID?.trim() ||
   '5759255200';
 
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
+  'https://placeholder.supabase.co';
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim() || 'public-anon-key';
+
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 export interface EmergencyDispatchInput {
-  id: string | number;
+  id?: string | number;
   citizen_name: string;
   phone?: string | null;
   description: string;
@@ -23,12 +33,14 @@ export interface EmergencyDispatchInput {
 }
 
 export interface EmergencyDispatchResult {
+  success?: boolean;
   dispatched: boolean;
   agency?: string;
   phone_line?: string;
   maps_link?: string;
   telegram_sent?: boolean;
   telegram_detail?: string;
+  report?: any;
   error?: string;
 }
 
@@ -44,6 +56,14 @@ function chooseAgency(category: string, description: string) {
   }
 
   return { agency: 'الشرطة والطوارئ العامة', phone_line: '155' };
+}
+
+function estimateSeverity(category: string, description: string): number {
+  const text = `${category} ${description}`.toLowerCase();
+  if (['حريق', 'نزيف', 'مصاب', 'انهيار', 'محتجز', 'إسعاف'].some((k) => text.includes(k))) {
+    return 9;
+  }
+  return 6;
 }
 
 async function sendDirectTelegram(message: string): Promise<{ ok: boolean; detail: string }> {
@@ -102,7 +122,6 @@ export async function dispatchEmergencyToPython(
 
     const telegramResult = await sendDirectTelegram(message);
 
-    // محاولة إرسال اختيارية إلى خدمة بايثون إذا كان هناك رابط عام مضبوط
     const pythonUrl = process.env.PYTHON_DISPATCH_URL?.trim();
     if (pythonUrl && !pythonUrl.includes('127.0.0.1') && !pythonUrl.includes('localhost')) {
       try {
@@ -110,7 +129,7 @@ export async function dispatchEmergencyToPython(
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            report_id: payload.id,
+            report_id: payload.id ?? null,
             citizen_name: payload.citizen_name,
             phone: payload.phone ?? null,
             description: payload.description,
@@ -127,6 +146,7 @@ export async function dispatchEmergencyToPython(
     }
 
     return {
+      success: true,
       dispatched: true,
       agency: agencyInfo.agency,
       phone_line: agencyInfo.phone_line,
@@ -136,8 +156,85 @@ export async function dispatchEmergencyToPython(
     };
   } catch (err: any) {
     return {
+      success: false,
       dispatched: false,
       error: err?.message || 'حدث خطأ أثناء توجيه البلاغ',
+    };
+  }
+}
+
+export async function submitEmergencyReport(formDataOrInput: any) {
+  try {
+    const raw =
+      formDataOrInput && typeof formDataOrInput.get === 'function'
+        ? {
+            citizen_name: String(formDataOrInput.get('citizen_name') || 'مواطن'),
+            phone: String(formDataOrInput.get('phone') || ''),
+            description: String(formDataOrInput.get('description') || ''),
+            category: String(formDataOrInput.get('category') || 'طوارئ عامة'),
+            latitude: Number(formDataOrInput.get('latitude') || 40.1885),
+            longitude: Number(formDataOrInput.get('longitude') || 29.067),
+            severity_score: Number(formDataOrInput.get('severity_score') || 0),
+          }
+        : {
+            citizen_name: String(formDataOrInput?.citizen_name || 'مواطن'),
+            phone: formDataOrInput?.phone ? String(formDataOrInput.phone) : '',
+            description: String(formDataOrInput?.description || ''),
+            category: String(formDataOrInput?.category || 'طوارئ عامة'),
+            latitude: Number(formDataOrInput?.latitude ?? 40.1885),
+            longitude: Number(formDataOrInput?.longitude ?? 29.067),
+            severity_score: Number(formDataOrInput?.severity_score || 0),
+          };
+
+    const severity =
+      raw.severity_score > 0
+        ? raw.severity_score
+        : estimateSeverity(raw.category, raw.description);
+
+    const { data, error } = await supabase
+      .from('sos_reports')
+      .insert([
+        {
+          citizen_name: raw.citizen_name,
+          phone: raw.phone || null,
+          description: raw.description,
+          category: raw.category,
+          severity_score: severity,
+          latitude: raw.latitude,
+          longitude: raw.longitude,
+          status: 'pending',
+        },
+      ])
+      .select()
+      .single();
+
+    if (error) {
+      return {
+        success: false,
+        error: `تعذر حفظ البلاغ: ${error.message}`,
+      };
+    }
+
+    const dispatchRes = await dispatchEmergencyToPython({
+      id: data?.id,
+      citizen_name: raw.citizen_name,
+      phone: raw.phone || null,
+      description: raw.description,
+      category: raw.category,
+      severity_score: severity,
+      latitude: raw.latitude,
+      longitude: raw.longitude,
+    });
+
+    return {
+      success: true,
+      report: data,
+      dispatch: dispatchRes,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      error: err?.message || 'حدث خطأ أثناء إرسال البلاغ',
     };
   }
 }
