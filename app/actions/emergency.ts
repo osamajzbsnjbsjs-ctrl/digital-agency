@@ -211,9 +211,22 @@ export async function submitEmergencyReport(input: SubmitEmergencyInput) {
       longitude: input.longitude,
     });
 
+    const reportData = {
+      id: insertedId,
+      citizen_name: input.citizen_name,
+      phone: input.phone || null,
+      description: input.description,
+      category: input.category || primaryAgency.name,
+      severity_score: severity,
+      latitude: input.latitude,
+      longitude: input.longitude,
+      status: 'pending',
+    };
+
     return {
       success: true,
       id: insertedId,
+      report: reportData,
       ...dispatchResult,
     };
   } catch (err) {
