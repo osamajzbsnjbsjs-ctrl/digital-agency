@@ -5,6 +5,19 @@ import { submitEmergencyReport } from '@/app/actions/emergency';
 import { AlertTriangle, MapPin, ShieldAlert, CheckCircle2, Loader2, Navigation } from 'lucide-react';
 import Link from 'next/link';
 
+interface EmergencyReportResult {
+  id: string | number;
+  citizen_name: string;
+  phone?: string | null;
+  description: string;
+  category: string;
+  severity_score: number;
+  latitude: number;
+  longitude: number;
+  status: string;
+  ai_summary?: string;
+}
+
 export default function SosPage() {
   const [citizenName, setCitizenName] = useState('');
   const [phone, setPhone] = useState('');
@@ -12,10 +25,9 @@ export default function SosPage() {
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [locStatus, setLocStatus] = useState<'loading' | 'ready' | 'fallback'>('loading');
   const [submitting, setSubmitting] = useState(false);
-  const [resultData, setResultData] = useState<any>(null);
+  const [resultData, setResultData] = useState<EmergencyReportResult | null>(null);
   const [errorMsg, setErrorMsg] = useState('');
 
-  // التقاط الموقع الجغرافي تلقائياً عند فتح الصفحة
   useEffect(() => {
     if (!navigator.geolocation) {
       setCoords({ lat: 40.1885, lng: 29.0670 });
@@ -32,7 +44,6 @@ export default function SosPage() {
         setLocStatus('ready');
       },
       () => {
-        // إحداثيات افتراضية في حال رفض المتصفح إذن الموقع
         setCoords({ lat: 40.1885, lng: 29.0670 });
         setLocStatus('fallback');
       },
@@ -63,7 +74,7 @@ export default function SosPage() {
 
     setSubmitting(false);
 
-    if (res.success) {
+    if (res.success && 'report' in res && res.report) {
       setResultData(res.report);
       setDescription('');
     } else {
@@ -74,7 +85,6 @@ export default function SosPage() {
   return (
     <div dir="rtl" className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-        {/* رأس الصفحة */}
         <div className="flex items-center justify-between mb-6 border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
             <div className="p-3 rounded-xl bg-red-500/15 border border-red-500/40 text-red-400">
@@ -93,7 +103,6 @@ export default function SosPage() {
           </Link>
         </div>
 
-        {/* مؤشر حالة الموقع GPS */}
         <div className="mb-6 p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-sm">
           <div className="flex items-center gap-2 text-slate-300">
             <Navigation className="w-4 h-4 text-emerald-400" />
@@ -116,7 +125,6 @@ export default function SosPage() {
           )}
         </div>
 
-        {/* نموذج إرسال البلاغ */}
         <form onSubmit={handleSubmit} className="space-y-4 bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-xl">
           <div>
             <label className="block text-sm font-medium text-slate-300 mb-1.5">الاسم الكامل *</label>
@@ -177,7 +185,6 @@ export default function SosPage() {
           </button>
         </form>
 
-        {/* بطاقة نتيجة تحليل الذكاء الاصطناعي */}
         {resultData && (
           <div className="mt-6 p-5 rounded-2xl bg-emerald-950/30 border border-emerald-500/40 space-y-3">
             <div className="flex items-center gap-2 text-emerald-400 font-bold">
@@ -196,7 +203,7 @@ export default function SosPage() {
             </div>
             <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-sm">
               <span className="text-slate-400 block text-xs mb-1">ملخص غرفة العمليات:</span>
-              <p className="text-slate-200">{resultData.ai_summary}</p>
+              <p className="text-slate-200">{resultData.ai_summary || resultData.description}</p>
             </div>
           </div>
         )}
