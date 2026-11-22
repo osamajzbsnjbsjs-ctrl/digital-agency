@@ -1,5 +1,7 @@
 'use server';
 
+import { createClient } from '@supabase/supabase-js';
+
 export interface EmergencyDispatchPayload {
   id: string | number;
   citizen_name: string;
@@ -9,6 +11,23 @@ export interface EmergencyDispatchPayload {
   severity_score: number;
   latitude: number;
   longitude: number;
+}
+
+export interface SubmitEmergencyInput {
+  citizen_name: string;
+  phone?: string | null;
+  description: string;
+  category?: string;
+  severity_score?: number;
+  latitude: number;
+  longitude: number;
+}
+
+function getSupabaseServerClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  if (!url || !key) return null;
+  return createClient(url, key);
 }
 
 function detectAgencies(description: string, category?: string): string[] {
@@ -47,9 +66,22 @@ function detectAgencies(description: string, category?: string): string[] {
 
   if (matched.length === 0) {
     const cat = (category || '').toLowerCase();
-    if (cat.includes('طب') || cat.includes('صح') || cat.includes('إسعاف') || cat.includes('اسعاف') || cat.includes('sağlık') || cat.includes('ambulans')) {
+    if (
+      cat.includes('طب') ||
+      cat.includes('صح') ||
+      cat.includes('إسعاف') ||
+      cat.includes('اسعاف') ||
+      cat.includes('sağlık') ||
+      cat.includes('ambulans')
+    ) {
       matched.push('ambulance');
-    } else if (cat.includes('حريق') || cat.includes('إطفاء') || cat.includes('اطفاء') || cat.includes('itfaiye') || cat.includes('yangın')) {
+    } else if (
+      cat.includes('حريق') ||
+      cat.includes('إطفاء') ||
+      cat.includes('اطفاء') ||
+      cat.includes('itfaiye') ||
+      cat.includes('yangın')
+    ) {
       matched.push('fire');
     } else {
       matched.push('police');
@@ -132,6 +164,62 @@ export async function dispatchEmergencyToPython(payload: EmergencyDispatchPayloa
     return {
       dispatched: false,
       error: err instanceof Error ? err.message : 'فشل في توجيه البلاغ',
+    };
+  }
+}
+
+export async function submitEmergencyReport(input: SubmitEmergencyInput) {
+  try {
+    const severity = input.severity_score ?? 8;
+    const agencies = detectAgencies(input.description, input.category);
+    const primaryAgency = getAgencyConfig(agencies[0]);
+
+    let insertedId: string | number = Date.now();
+    const supabase = getSupabaseServerClient();
+
+    if (supabase) {
+      const { data, error } = await supabase
+        .from('emergency_reports')
+        .insert([
+          {
+            citizen_name: input.citizen_name,
+            phone: input.phone || null,
+            description: input.description,
+            category: input.category || primaryAgency.name,
+            severity_score: severity,
+            latitude: input.latitude,
+            longitude: input.longitude,
+            status: 'pending',
+          },
+        ])
+        .select('id')
+        .single();
+
+      if (!error && data?.id) {
+        insertedId = data.id;
+      }
+    }
+
+    const dispatchResult = await dispatchEmergencyToPython({
+      id: insertedId,
+      citizen_name: input.citizen_name,
+      phone: input.phone,
+      description: input.description,
+      category: input.category,
+      severity_score: severity,
+      latitude: input.latitude,
+      longitude: input.longitude,
+    });
+
+    return {
+      success: true,
+      id: insertedId,
+      ...dispatchResult,
+    };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : 'حدث خطأ أثناء إرسال البلاغ',
     };
   }
 }
